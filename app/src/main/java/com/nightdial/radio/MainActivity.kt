@@ -62,15 +62,15 @@ import androidx.media3.session.SessionToken
 import com.google.common.util.concurrent.MoreExecutors
 import kotlinx.coroutines.launch
 
-private val BG = Color(0xFF141110)
-private val PANEL = Color(0xFF1E1916)
-private val PANEL2 = Color(0xFF271F19)
-private val TUNEDBG = Color(0xFF2B1F14)
-private val INK = Color(0xFFF2E7DB)
-private val MUTED = Color(0xFF9C8B7B)
-private val AMBER = Color(0xFFE8A13A)
-private val AMBER_SOFT = Color(0xFFF4C87E)
-private val LINE = Color(0xFF3A302A)
+private val BG = Color(0xFFFFFFFF)        // white
+private val PANEL = Color(0xFFFFFFFF)      // white panels (no fills, just borders)
+private val PANEL2 = Color(0xFFFFFFFF)
+private val TUNEDBG = Color(0xFF000000)    // selected station: black fill
+private val INK = Color(0xFF000000)        // black text
+private val MUTED = Color(0xFF444444)      // secondary text (dark gray, still readable on e-ink)
+private val AMBER = Color(0xFF000000)       // accent -> black
+private val AMBER_SOFT = Color(0xFF000000)
+private val LINE = Color(0xFF000000)        // black borders
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -191,7 +191,7 @@ fun RadioApp() {
                         ) {
                             Text(
                                 st.name,
-                                color = if (tuned) AMBER_SOFT else INK,
+                                color = if (tuned) BG else INK,
                                 fontSize = 16.sp,
                                 fontWeight = FontWeight.SemiBold,
                                 maxLines = 1,
@@ -199,7 +199,7 @@ fun RadioApp() {
                             )
                             Text(
                                 st.host,
-                                color = MUTED,
+                                color = if (tuned) BG else MUTED,
                                 fontFamily = FontFamily.Monospace,
                                 fontSize = 11.sp,
                                 maxLines = 1,
@@ -249,6 +249,7 @@ fun RadioApp() {
                         .fillMaxWidth()
                         .clip(RoundedCornerShape(16.dp))
                         .background(PANEL)
+                        .border(1.dp, LINE, RoundedCornerShape(16.dp))
                         .clickable { browsing = true }
                         .padding(12.dp)
                 ) {
