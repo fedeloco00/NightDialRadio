@@ -108,6 +108,7 @@ fun RadioApp() {
     }
 
     var currentIndex by remember { mutableStateOf(-1) }
+    var browsing by remember { mutableStateOf(true) }   // station list shown?
     var isPlaying by remember { mutableStateOf(false) }
     var song by remember { mutableStateOf("") }
     var lyrics by remember { mutableStateOf("") }
@@ -152,6 +153,7 @@ fun RadioApp() {
         c.setMediaItem(MediaItem.fromUri(STATIONS[i].url))
         c.prepare()
         c.play()
+        browsing = false          // collapse the list so the lyrics get the space
     }
 
     fun toggle() {
@@ -177,7 +179,11 @@ fun RadioApp() {
             Spacer(Modifier.height(12.dp))
 
             // Vertical station roller (swipe, or the arrows on the right)
-            LaunchedEffect(currentIndex) { listState.centerOn(currentIndex, animate = true) }
+            if (browsing) {
+            LaunchedEffect(Unit) {           // list (re)opened: tuned station in the middle
+                withFrameNanos { }
+                listState.centerOn(currentIndex)
+            }
             Row(Modifier.fillMaxWidth().height(240.dp)) {
             LazyColumn(
                 state = listState,
@@ -230,6 +236,7 @@ fun RadioApp() {
             }
 
             Spacer(Modifier.height(12.dp))
+            }   // if (browsing)
 
             Row(
                 verticalAlignment = Alignment.CenterVertically,
@@ -237,7 +244,7 @@ fun RadioApp() {
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(18.dp))
                     .background(PANEL)
-                    .clickable { scope.launch { listState.centerOn(currentIndex, animate = true) } }
+                    .clickable { if (currentIndex >= 0) browsing = !browsing }
                     .padding(14.dp)
             ) {
                 Box(
@@ -253,7 +260,7 @@ fun RadioApp() {
                 Spacer(Modifier.width(14.dp))
                 Column(Modifier.weight(1f)) {
                     Text(
-                        "TUNED TO",
+                        if (browsing || currentIndex < 0) "TUNED TO" else "TUNED TO · TAP TO CHANGE",
                         color = MUTED,
                         fontFamily = FontFamily.Monospace,
                         fontSize = 10.sp,
