@@ -267,15 +267,17 @@ fun RadioApp() {
                         colors = ButtonDefaults.buttonColors(containerColor = AMBER, contentColor = BG)
                     ) { Text("Find") }
                 }
-            } else {
-                // ---- Playing: collapsed channel bar, tap to change ----
+            }
+            if (!browsing || currentIndex >= 0) {
+                // ---- Channel bar: tap to open / close the station list ----
+                if (browsing) Spacer(Modifier.height(10.dp))
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier
                         .fillMaxWidth()
                         .clip(RoundedCornerShape(16.dp))
                         .background(PANEL)
-                        .clickable { browsing = true }
+                        .clickable { if (currentIndex >= 0) browsing = !browsing }
                         .padding(12.dp)
                 ) {
                     Box(
@@ -291,7 +293,7 @@ fun RadioApp() {
                     Spacer(Modifier.width(12.dp))
                     Column(Modifier.weight(1f)) {
                         Text(
-                            "TUNED TO · TAP TO CHANGE",
+                            if (browsing) "TUNED TO · TAP TO CLOSE" else "TUNED TO · TAP TO CHANGE",
                             color = MUTED,
                             fontFamily = FontFamily.Monospace,
                             fontSize = 9.sp,
