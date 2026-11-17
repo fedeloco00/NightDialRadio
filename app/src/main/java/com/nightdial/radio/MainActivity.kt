@@ -25,6 +25,13 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.gestures.animateScrollBy
+import androidx.compose.foundation.gestures.scrollBy
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.runtime.withFrameNanos
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -108,6 +115,13 @@ fun RadioApp() {
     var lyricsBusy by remember { mutableStateOf(false) }
     var manualHold by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
+    val listState = rememberLazyListState()
+    fun pageScroll(dir: Int) {
+        scope.launch {
+            val target = (listState.firstVisibleItemIndex + dir * 3).coerceIn(0, STATIONS.lastIndex)
+            listState.animateScrollToItem(target)
+        }
+    }
 
     DisposableEffect(controller) {
         val c = controller ?: return@DisposableEffect onDispose {}
@@ -162,12 +176,15 @@ fun RadioApp() {
             )
             Spacer(Modifier.height(12.dp))
 
-            // Vertical station roller (scroll by swipe / flick)
+            // Vertical station roller (swipe, or the arrows on the right)
+            LaunchedEffect(currentIndex) { listState.centerOn(currentIndex, animate = true) }
+            Row(Modifier.fillMaxWidth().height(240.dp)) {
             LazyColumn(
+                state = listState,
                 verticalArrangement = Arrangement.spacedBy(6.dp),
                 contentPadding = PaddingValues(6.dp),
                 modifier = Modifier
-                    .fillMaxWidth()
+                    .weight(1f)
                     .height(240.dp)
                     .clip(RoundedCornerShape(16.dp))
                     .background(PANEL)
@@ -205,6 +222,13 @@ fun RadioApp() {
                 }
             }
 
+            Spacer(Modifier.width(8.dp))
+            Column(Modifier.width(46.dp).fillMaxHeight(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                ArrowButton("▲", Modifier.fillMaxWidth().weight(1f)) { pageScroll(-1) }
+                ArrowButton("▼", Modifier.fillMaxWidth().weight(1f)) { pageScroll(1) }
+            }
+            }
+
             Spacer(Modifier.height(12.dp))
 
             Row(
@@ -213,6 +237,7 @@ fun RadioApp() {
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(18.dp))
                     .background(PANEL)
+                    .clickable { scope.launch { listState.centerOn(currentIndex, animate = true) } }
                     .padding(14.dp)
             ) {
                 Box(
@@ -249,6 +274,13 @@ fun RadioApp() {
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
+                }
+                if (currentIndex >= 0) {
+                    Spacer(Modifier.width(8.dp))
+                    Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
+                        ArrowButton("▲", Modifier.size(width = 44.dp, height = 28.dp), enabled = currentIndex > 0, fontSize = 12.sp) { tune(currentIndex - 1) }
+                        ArrowButton("▼", Modifier.size(width = 44.dp, height = 28.dp), enabled = currentIndex < STATIONS.lastIndex, fontSize = 12.sp) { tune(currentIndex + 1) }
+                    }
                 }
             }
 
@@ -338,4 +370,35 @@ fun RadioApp() {
             }
         }
     }
+}
+
+@Composable
+private fun ArrowButton(
+    label: String,
+    modifier: Modifier,
+    enabled: Boolean = true,
+    fontSize: TextUnit = 16.sp,
+    onClick: () -> Unit
+) {
+    Box(
+        modifier
+            .clip(RoundedCornerShape(10.dp))
+            .background(PANEL)
+            .border(1.dp, LINE, RoundedCornerShape(10.dp))
+            .clickable(enabled = enabled, onClick = onClick),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(label, color = if (enabled) AMBER else LINE, fontSize = fontSize)
+    }
+}
+
+/** Scroll so station [i] sits in the middle of the roller, neighbours above and below. */
+private suspend fun LazyListState.centerOn(i: Int, animate: Boolean = false) {
+    if (i < 0) return
+    if (layoutInfo.visibleItemsInfo.none { it.index == i }) scrollToItem(i)
+    val li = layoutInfo
+    val item = li.visibleItemsInfo.firstOrNull { it.index == i } ?: return
+    val mid = (li.viewportStartOffset + li.viewportEndOffset) / 2
+    val delta = (item.offset + item.size / 2 - mid).toFloat()
+    if (animate) animateScrollBy(delta) else scrollBy(delta)
 }
